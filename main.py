@@ -8,7 +8,7 @@ from SQLA_recs import *
 
 bot = telebot.TeleBot(token)
 
-users = []
+users = {}
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -49,16 +49,38 @@ def send_menu(message):
 @bot.message_handler(commands=['auth'])
 def send_welcome(message):
     bot.reply_to(message, text='Для авторизации отправьте вашу фамилию следующим сообщением.')
-    bot.register_next_step_handler(message, last_name)
+    bot.register_next_step_handler(message, get_last_name)
 
 
-def last_name(message):
+def get_last_name(message):
     try:
-        get_user_by_last_name(message.text)
+        users[message.chat.id] = get_user_by_last_name(message.text)
         bot.send_message(message.chat.id, "Введите номер лицевого счета")
+        bot.register_next_step_handler(message, get_id)
 
     except sqlalchemy.exc.NoResultFound:
         bot.send_message(message.chat.id, "Пользователя с данной фамилией не найдено")
+
+    except:
+        bot.send_message(message.chat.id, "Что-то пошло не так, обратитесь к администратору для разъяснений")
+
+
+def get_id(message):
+    try:
+        if users[message.chat.id].id == int(message.text):
+            bot.send_message(message.chat.id, "Вы успешно зарегистрированы")
+        else:
+            del users[message.chat.id]
+            bot.send_message(message.chat.id, "Данный лицевой счет не соответствует фамилии."
+                                              "\nПройдите авторизацию заново."
+                                              "\n/auth - авторизация")
+
+    except ValueError:
+        bot.send_message(message.chat.id, "При отправке лицевого счета используйте только числа")
+        bot.register_next_step_handler(message, get_id)
+
+    except:
+        bot.send_message(message.chat.id, "Что-то пошло не так, обратитесь к администратору для разъяснений")
 
 
 @bot.message_handler(content_types=['text'])
