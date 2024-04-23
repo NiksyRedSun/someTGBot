@@ -1,0 +1,9 @@
+.idea
+.git
+.gitattributes
+.env
+*/__pycache__
+/__pycache__
+/venv
+info.txt
+mybackup.sql
