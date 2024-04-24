@@ -60,5 +60,3 @@ install_requirements()
 run_alembic_upgrade()
 
 input("Нажмите Enter для продолжения")
-
-sys.exit(1)
