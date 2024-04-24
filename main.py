@@ -12,9 +12,6 @@ bot = telebot.TeleBot(token)
 # нужен для авторизации
 users = {}
 
-#нужны для временного хранения данных, перед отправкой в бд
-treatments = {}
-
 
 # хэндлеры на старт, на помощь и на меню
 
@@ -40,12 +37,14 @@ def send_menu(message):
     chat_id = message.chat.id
 
     keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    meters_data = telebot.types.KeyboardButton(text="Отправить показания")
+    meters_data_electricity = telebot.types.KeyboardButton(text="Отправить показания электричества")
+    meters_data_water = telebot.types.KeyboardButton(text="Отправить показания воды")
     treatment = telebot.types.KeyboardButton(text="Отправить обращение")
     payment = telebot.types.KeyboardButton(text="Оплатить услуги")
     contacts = telebot.types.KeyboardButton(text="Контакты")
 
-    keyboard.add(meters_data)
+    keyboard.add(meters_data_electricity)
+    keyboard.add(meters_data_water)
     keyboard.add(treatment)
     keyboard.add(payment)
     keyboard.add(contacts)
@@ -57,21 +56,27 @@ def send_menu(message):
 
 @bot.message_handler(commands=['auth'])
 def send_welcome(message):
-    bot.reply_to(message, text='Для авторизации отправьте вашу фамилию следующим сообщением.')
-    bot.register_next_step_handler(message, get_last_name)
+    bot.reply_to(message, text='Для авторизации отправьте ваши Фамилию Имя Отчество следующим сообщением'
+                               ' последовательно, через пробел.')
+    bot.register_next_step_handler(message, get_full_name)
 
 
 
-def get_last_name(message):
+def get_full_name(message):
     try:
-        users[message.chat.id] = get_user_by_last_name(message.text)
+        last_name, first_name, middle_name = tuple((message.text).split())
+        users[message.chat.id] = get_user(last_name, first_name, middle_name)
         bot.send_message(message.chat.id, "Введите номер лицевого счета")
         bot.register_next_step_handler(message, get_id)
 
     except sqlalchemy.exc.NoResultFound:
-        bot.send_message(message.chat.id, "Пользователя с данной фамилией не найдено"
+        bot.send_message(message.chat.id, "Пользователя с данными ФИО не найдено"
                                             "\nПройдите авторизацию заново."
                                             "\n/auth - авторизация")
+    except ValueError:
+        bot.send_message(message.chat.id, "Вводите только ФИО (3 слова последовательно), через пробел"
+                                          "\nПройдите авторизацию заново."
+                                          "\n/auth - авторизация")
 
     except:
         bot.send_message(message.chat.id, "Что-то пошло не так, обратитесь к администратору для разъяснений.")
@@ -105,13 +110,20 @@ def message_reply(message):
                                           "\n/auth - авторизация")
         return None
 
-    if message.text == "Отправить показания":
-        bot.send_message(message.chat.id, "Введите значения первого и второго показателя по электричеству через пробел.")
+    elif message.text == "Отправить показания электричества":
+        bot.send_message(message.chat.id, "Последовательно, через пробел,"
+                                          " введите показания счетчиков электричества за день и ночь.")
         bot.register_next_step_handler(message, get_electricity)
 
+    elif message.text == "Отправить показания воды":
+        bot.send_message(message.chat.id,
+                         "Последовательно, через пробел, введите показания счетчиков горячей и холодной воды на кухне.")
+        bot.register_next_step_handler(message, get_kitchen)
+
     elif message.text == "Отправить обращение":
-        bot.send_message(message.chat.id, "Следующим сообщением отправьте тему обращения.")
-        bot.register_next_step_handler(message, treatment_theme)
+        bot.send_message(message.chat.id, "Следующим сообщением введите тему обращения."
+                                          " Затем перейдите на следующую строку и подробно распишите причину обращения.")
+        bot.register_next_step_handler(message, make_treatment)
 
     elif message.text == "Оплатить услуги":
         bot.send_message(message.chat.id, "Следующим сообщением отправьте сумму, которую хотите заплатить")
@@ -119,7 +131,8 @@ def message_reply(message):
 
     elif message.text == "Контакты":
         bot.send_message(message.chat.id, "Для личного обращения вы можете пройти по адресу "
-                                          "ул. Пушкина, дом Колотушкина.")
+                                          "г. Уфа, ул. Комсомольская 165/1, МКУ УЖХ г. Уфы, "
+                                          "контактный телефон: 8(347)233-66-33.")
 
     else:
         bot.send_message(message.chat.id, "Выберите одно из возможных действий на клавиатуре."
@@ -135,14 +148,12 @@ def get_electricity(message):
                               second_parameter=parameter2, source='Electricity', room_type="Common")
         save(indicator)
         bot.send_message(message.chat.id, "Данные успешно сохранены")
-        bot.send_message(message.chat.id,
-                         "Введите значения первого и второго показателя по воде на кухне через пробел.")
-        bot.register_next_step_handler(message, get_kitchen)
+
 
     except ValueError:
-        bot.send_message(message.chat.id, "При отправке показателей используйте только числа. "
-                                          "Вводите только два показателя через пробел. "
-                                          "Повторите ввод показателей по электричеству заново.")
+        bot.send_message(message.chat.id, "При отправке показаний используйте только числа. "
+                                          "Вводите только два показания: за день и ночь через пробел. "
+                                          "Повторите ввод показаний счетчиков электричества заново.")
         bot.register_next_step_handler(message, get_electricity)
 
     except:
@@ -159,13 +170,13 @@ def get_kitchen(message):
         save(indicator)
         bot.send_message(message.chat.id, "Данные успешно сохранены")
         bot.send_message(message.chat.id,
-                         "Введите значения первого и второго показателя по воде в ванной через пробел.")
+                         "Последовательно, через пробел, введите показания счетчиков горячей и холодной воды в ванной.")
         bot.register_next_step_handler(message, get_bath)
 
     except ValueError:
-        bot.send_message(message.chat.id, "При отправке показателей используйте только числа. "
-                                          "Вводите только два показателя через пробел. "
-                                          "Повторите ввод показателей по воде на кухне заново.")
+        bot.send_message(message.chat.id, "При отправке показаний используйте только числа. "
+                                          "Вводите только два показания: по горячей и по холодной воде через пробел. "
+                                          "Повторите ввод показаний счетчиков горячей и холодной воды в кухне заново.")
         bot.register_next_step_handler(message, get_kitchen)
 
     except:
@@ -180,35 +191,32 @@ def get_bath(message):
         indicator = Indicator(client_id=users[message.chat.id].id, first_parameter=parameter1,
                               second_parameter=parameter2, source='Water', room_type="Bath")
         save(indicator)
-        bot.send_message(message.chat.id, "Данные успешно сохранены. Вы отправили все показатели.")
+        bot.send_message(message.chat.id, "Данные успешно сохранены.")
 
     except ValueError:
-        bot.send_message(message.chat.id, "При отправке показателей используйте только числа. "
-                                          "Вводите только два показателя через пробел. "
-                                          "Повторите ввод показателей по воде в ванной заново.")
+        bot.send_message(message.chat.id, "При отправке показаний используйте только числа. "
+                                          "Вводите только два показания: по горячей и по холодной воде через пробел. "
+                                          "Повторите ввод показаний счетчиков горячей и холодной воды в ванной заново.")
         bot.register_next_step_handler(message, get_bath)
 
     except:
         bot.send_message(message.chat.id, "Что-то пошло не так, обратитесь к администратору для разъяснений.")
 
 
+
 #хэндлеры по обращениям
-def treatment_theme(message):
+def make_treatment(message):
     try:
-        treatments[message.chat.id] = Treatment(type=message.text, client_id=users[message.chat.id].id)
-        bot.send_message(message.chat.id, "В следующем сообщение подробно опишите возникшую проблему.")
-        bot.register_next_step_handler(message, treatment_text)
-
-    except:
-        bot.send_message(message.chat.id, "Что-то пошло не так, обратитесь к администратору для разъяснений.")
-
-
-def treatment_text(message):
-    try:
-        treatments[message.chat.id].text = message.text
+        theme, text = (message.text).split('\n', 1)
+        treatment = Treatment(client_id=users[message.chat.id].id, type=theme, text=text)
+        save(treatment)
         bot.send_message(message.chat.id, "Спасибо за ваше обращение, мы ответим вам так скоро, как только сможем.")
-        save(treatments[message.chat.id])
-        del treatments[message.chat.id]
+
+    except ValueError:
+        bot.send_message(message.chat.id, "Не произошел перенос строки после темы обращения."
+                                          "Повторите ввод, введите тему обращения, затем с помощью ENTER перейдите"
+                                          " на другую строку и подробно распишите причину обращения")
+        bot.register_next_step_handler(message, make_treatment)
 
     except:
         bot.send_message(message.chat.id, "Что-то пошло не так, обратитесь к администратору для разъяснений.")
