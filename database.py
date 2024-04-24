@@ -5,6 +5,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from config import DB_HOST, DB_PASS, DB_USER, DB_PORT, DB_NAME
 
 
+#инфа по бд
+
 url_object = URL.create(
     "postgresql",
     username=DB_USER,

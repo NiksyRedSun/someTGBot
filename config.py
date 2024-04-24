@@ -2,6 +2,8 @@ from dotenv import load_dotenv
 import os
 
 
+#загрузка переменных окружения
+
 load_dotenv()
 
 DB_USER = os.environ.get("DB_USER")

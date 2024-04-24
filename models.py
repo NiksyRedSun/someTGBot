@@ -4,6 +4,7 @@ from typing import List
 from database import Base
 
 
+#модели
 
 class Client(Base):
     __tablename__ = "Clients"
@@ -36,7 +37,7 @@ class Treatment(Base):
 
     id = Column("Id", Integer, primary_key=True)
     client_id = Column("ClientId", BigInteger, ForeignKey("Clients.Id", ondelete="CASCADE"))
-    text = Column("Text", String)
+    text = Column("Text", Text)
     type = Column("Type", String)
 
 
