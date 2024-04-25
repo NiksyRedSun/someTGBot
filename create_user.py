@@ -11,6 +11,7 @@ try:
     with Session() as session:
         session.add(user)
         session.commit()
+        print("Пользователь создан")
 except:
     print("Пользователь не создан, что-то пошло не так")
 

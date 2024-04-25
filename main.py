@@ -3,7 +3,7 @@ import telebot
 from config import token
 from SQLA_recs import *
 from models import *
-
+from invoice.invoice_generator import make_pdf
 
 
 
@@ -64,7 +64,7 @@ def send_welcome(message):
 
 def get_full_name(message):
     try:
-        last_name, first_name, middle_name = tuple((message.text).split())
+        last_name, first_name, middle_name = (message.text).split()
         users[message.chat.id] = get_user(last_name, first_name, middle_name)
         bot.send_message(message.chat.id, "Введите номер лицевого счета")
         bot.register_next_step_handler(message, get_id)
@@ -126,7 +126,8 @@ def message_reply(message):
         bot.register_next_step_handler(message, make_treatment)
 
     elif message.text == "Оплатить услуги":
-        bot.send_message(message.chat.id, "Следующим сообщением отправьте сумму, которую хотите заплатить")
+        bot.send_message(message.chat.id, "Следующим сообщением отправьте сумму, "
+                                          "которую хотите заплатить за комунальные услуги.")
         bot.register_next_step_handler(message, payment)
 
     elif message.text == "Контакты":
@@ -207,7 +208,7 @@ def get_bath(message):
 #хэндлеры по обращениям
 def make_treatment(message):
     try:
-        theme, text = (message.text).split('\n', 1)
+        theme, text = message.text.split('\n', 1)
         treatment = Treatment(client_id=users[message.chat.id].id, type=theme, text=text)
         save(treatment)
         bot.send_message(message.chat.id, "Спасибо за ваше обращение, мы ответим вам так скоро, как только сможем.")
@@ -224,16 +225,20 @@ def make_treatment(message):
 
 #оплата
 def payment(message):
-    try:
+    # try:
         int(message.text)
-        bot.send_message(message.chat.id, "Спасибо за вашу оплату")
+        bot.send_message(message.chat.id, "Спасибо за вашу оплату, квитанция будет отправлена следующим сообщением")
+        make_pdf(users[message.chat.id].last_name + " " + users[message.chat.id].first_name + " " +  users[message.chat.id].middle_name,
+                 users[message.chat.id].id, users[message.chat.id].address, message.text)
+        f = open(r"invoice\demo.pdf", "rb")
+        bot.send_document(message.chat.id, f)
 
-    except ValueError:
-        bot.send_message(message.chat.id, "Повторите ввод оплаты, используя числовые значения")
-        bot.register_next_step_handler(message, payment)
-
-    except:
-        bot.send_message(message.chat.id, "Что-то пошло не так, обратитесь к администратору для разъяснений.")
+    # except ValueError:
+    #     bot.send_message(message.chat.id, "Повторите ввод оплаты, используя числовые значения")
+    #     bot.register_next_step_handler(message, payment)
+    #
+    # except:
+    #     bot.send_message(message.chat.id, "Что-то пошло не так, обратитесь к администратору для разъяснений.")
 
 
 bot.infinity_polling()
