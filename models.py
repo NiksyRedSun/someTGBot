@@ -2,7 +2,7 @@ from sqlalchemy import Table, Column, Integer, String, TIMESTAMP, MetaData, Text
 from sqlalchemy.orm import relationship, Mapped
 from typing import List
 from database import Base
-
+import datetime
 
 #модели
 
@@ -17,6 +17,7 @@ class Client(Base):
 
     indicators: Mapped[List["Indicator"]] = relationship(back_populates="client")
     treatments: Mapped[List["Treatment"]] = relationship(back_populates="client")
+    payments: Mapped[List["Payment"]] = relationship(back_populates="client")
 
 
 class Indicator(Base):
@@ -43,3 +44,13 @@ class Treatment(Base):
 
     client = relationship(Client, back_populates='treatments')
 
+
+class Payment(Base):
+    __tablename__ = "Payments"
+
+    id = Column("Id", Integer, primary_key=True)
+    client_id = Column("ClientId", BigInteger, ForeignKey("Clients.Id", ondelete="CASCADE"))
+    sum = Column("Sum", Integer)
+    created_date = Column(DateTime, default=datetime.datetime.utcnow)
+
+    client = relationship(Client, back_populates='payments')

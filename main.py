@@ -225,20 +225,22 @@ def make_treatment(message):
 
 #оплата
 def payment(message):
-    # try:
+    try:
         int(message.text)
         bot.send_message(message.chat.id, "Спасибо за вашу оплату, квитанция будет отправлена следующим сообщением")
         make_pdf(users[message.chat.id].last_name + " " + users[message.chat.id].first_name + " " +  users[message.chat.id].middle_name,
                  users[message.chat.id].id, users[message.chat.id].address, message.text)
+        this_payment = Payment(client_id=users[message.chat.id].id, sum=int(message.text))
+        save(this_payment)
         f = open(r"invoice\demo.pdf", "rb")
         bot.send_document(message.chat.id, f)
 
-    # except ValueError:
-    #     bot.send_message(message.chat.id, "Повторите ввод оплаты, используя числовые значения")
-    #     bot.register_next_step_handler(message, payment)
-    #
-    # except:
-    #     bot.send_message(message.chat.id, "Что-то пошло не так, обратитесь к администратору для разъяснений.")
+    except ValueError:
+        bot.send_message(message.chat.id, "Повторите ввод оплаты, используя числовые значения")
+        bot.register_next_step_handler(message, payment)
+
+    except:
+        bot.send_message(message.chat.id, "Что-то пошло не так, обратитесь к администратору для разъяснений.")
 
 
 bot.infinity_polling()

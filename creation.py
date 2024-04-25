@@ -37,6 +37,7 @@ def install_requirements():
         print("Не удалось установить зависимости из файла requirements.txt.")
 
 
+
 def run_alembic_upgrade():
     # Определение текущей директории
     current_dir = os.getcwd()
