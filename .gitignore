@@ -7,4 +7,13 @@
 /venv
 info.txt
 mybackup.sql
-/invoice
+invoice/fpdf_unicode_font_pack
+invoice/DejaVuSans-Bold.cw127.pkl
+invoice/DejaVuSans-Bold.pkl
+invoice/DejaVuSansCondensed.cw127.pkl
+invoice/DejaVuSansCondensed.pkl
+invoice/DejaVUSerif-Bold.cw127.pkl
+invoice/DejaVUSerif-Bold.pkl
+invoice/demo.pdf
+invoice/logo.jpg
+

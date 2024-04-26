@@ -51,6 +51,6 @@ class Payment(Base):
     id = Column("Id", Integer, primary_key=True)
     client_id = Column("ClientId", BigInteger, ForeignKey("Clients.Id", ondelete="CASCADE"))
     sum = Column("Sum", Integer)
-    created_date = Column(DateTime, default=datetime.datetime.utcnow)
+    created_date = Column("CreatedOn", DateTime, default=datetime.datetime.utcnow)
 
     client = relationship(Client, back_populates='payments')
